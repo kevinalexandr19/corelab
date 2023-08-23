@@ -1,4 +1,4 @@
-# core3d.py
+# corelab.py
 
 Python library for 2D and 3D drillhole information visualization\
 Note: data cleaning and validation is recommended before using this library\
