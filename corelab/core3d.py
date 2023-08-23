@@ -1,5 +1,5 @@
 ####
-#### core3d v1.0 Agosto 2023
+#### core3d
 #### Python module for 3D drillhole visualization
 
 import matplotlib.colors as mcolors
