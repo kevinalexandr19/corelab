@@ -80,7 +80,11 @@ class DrillData:
     collar : pandas.DataFrame, contains the drillhole collar data. You must select the columns: ID, X, Y, Z.\n
     survey : pandas.DataFrame, contains the drillhole survey data. You must select the columns: ID, AT, AZ, DIP.\n
     table: pandas.DataFrame, contains the drillhole geological data. You must select the columns: ID, FROM, TO.
-           The remaining columns are used as features for the 3D visualization (e.g. AU_gpt).\n"""        
+           The remaining columns are used as features for the 3D visualization (e.g. AU_gpt).\n
+    columns (optional): dict, contains the name of each column of collar, survey and table of the original data.
+                        Example: {"collar": ["id", "x", "y", "z"],
+                                  "survey": ["id", "at", "az", "dip"],
+                                  "table": ["id", "from", "to"]}"""
         
     def __init__(self, collar: pd.DataFrame, survey: pd.DataFrame, table: pd.DataFrame, columns:dict=None):
         self.collar = collar.copy()
@@ -91,9 +95,9 @@ class DrillData:
         self.feature_palette = None
         
         if columns:
-            self.collar.rename(dict(zip(columns["collar"], ["ID", "X", "Y", "Z"])), inplace=True)
-            self.survey.rename(dict(zip(columns["collar"], ["ID", "AT", "AZ" "DIP"])), inplace=True)
-            self.table.rename(dict(zip(columns["collar"], ["ID", "FROM", "TO"])), inplace=True)
+            self.collar.rename(columns=dict(zip(columns["collar"], ["ID", "X", "Y", "Z"])), inplace=True)
+            self.survey.rename(columns=dict(zip(columns["collar"], ["ID", "AT", "AZ" "DIP"])), inplace=True)
+            self.table.rename(columns=dict(zip(columns["collar"], ["ID", "FROM", "TO"])), inplace=True)
 
             validate_collar = all([col in self.collar.columns for col in ["ID", "X", "Y", "Z"]])
             validate_survey = all([col in self.survey.columns for col in ["ID", "AT", "AZ", "DIP"]])
