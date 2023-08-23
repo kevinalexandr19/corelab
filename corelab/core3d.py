@@ -96,8 +96,8 @@ class DrillData:
         
         if columns:
             self.collar.rename(columns=dict(zip(columns["collar"], ["ID", "X", "Y", "Z"])), inplace=True)
-            self.survey.rename(columns=dict(zip(columns["collar"], ["ID", "AT", "AZ" "DIP"])), inplace=True)
-            self.table.rename(columns=dict(zip(columns["collar"], ["ID", "FROM", "TO"])), inplace=True)
+            self.survey.rename(columns=dict(zip(columns["survey"], ["ID", "AT", "AZ", "DIP"])), inplace=True)
+            self.table.rename(columns=dict(zip(columns["table"], ["ID", "FROM", "TO"])), inplace=True)
 
             validate_collar = all([col in self.collar.columns for col in ["ID", "X", "Y", "Z"]])
             validate_survey = all([col in self.survey.columns for col in ["ID", "AT", "AZ", "DIP"]])
@@ -105,9 +105,9 @@ class DrillData:
 
             if all([validate_collar, validate_survey, validate_table]):
                 print("Todas las columnas han sido seleccionadas.")
-                self.collar = collar[["ID", "X", "Y", "Z"]].copy()
-                self.survey = survey[["ID", "AT", "AZ", "DIP"]].copy()
-                self.table = table.copy()
+                self.collar = self.collar[["ID", "X", "Y", "Z"]].copy()
+                self.survey = self.survey[["ID", "AT", "AZ", "DIP"]].copy()
+                self.table = self.table.copy()
 
                 # Procesa toda la información
                 self.validate_columns()
@@ -128,13 +128,9 @@ class DrillData:
            will process the data and extract the datatype of each
            column in table (except from ID, FROM and TO)."""
         
-        collar = self.collar
-        survey = self.survey
-        table = self.table
-
         ################ COLLAR ################
         # Lista de columnas a elegir
-        optionsC = list(collar.columns) + ["Seleccione una columna"]
+        optionsC = list(self.collar.columns) + ["Seleccione una columna"]
 
         # Crear widgets de selección para las columnas
         col_widget_1C = widgets.Dropdown(options=optionsC, value=optionsC[-1],
@@ -163,7 +159,7 @@ class DrillData:
 
         ################ SURVEY ################
         # Lista de columnas a elegir
-        optionsS = list(survey.columns) + ["Seleccione una columna"]
+        optionsS = list(self.survey.columns) + ["Seleccione una columna"]
 
         # Crear widgets de selección para las columnas
         col_widget_1S = widgets.Dropdown(options=optionsS, value=optionsS[-1],
@@ -192,7 +188,7 @@ class DrillData:
 
         ################ TABLE ################
         # Lista de columnas a elegir
-        optionsT = list(table.columns) + ["Seleccione una columna"]
+        optionsT = list(self.table.columns) + ["Seleccione una columna"]
 
         # Crear widgets de selección para las columnas
         col_widget_1T = widgets.Dropdown(options=optionsT, value=optionsT[-1],
@@ -232,20 +228,20 @@ class DrillData:
                         col_widget_2T.value : "FROM",
                         col_widget_3T.value : "TO"}
 
-            collar.rename(columns=columnsC, inplace=True)
-            survey.rename(columns=columnsS, inplace=True)
-            table.rename(columns=columnsT, inplace=True)
+            self.collar.rename(columns=columnsC, inplace=True)
+            self.survey.rename(columns=columnsS, inplace=True)
+            self.table.rename(columns=columnsT, inplace=True)
 
             with output:
-                validate_collar = all([col in collar.columns for col in ["ID", "X", "Y", "Z"]])
-                validate_survey = all([col in survey.columns for col in ["ID", "AT", "AZ", "DIP"]])
-                validate_table = all([col in table.columns for col in ["ID", "FROM", "TO"]])
+                validate_collar = all([col in self.collar.columns for col in ["ID", "X", "Y", "Z"]])
+                validate_survey = all([col in self.survey.columns for col in ["ID", "AT", "AZ", "DIP"]])
+                validate_table = all([col in self.table.columns for col in ["ID", "FROM", "TO"]])
 
                 if all([validate_collar, validate_survey, validate_table]):
                     print("Todas las columnas han sido seleccionadas.")
-                    self.collar = collar[["ID", "X", "Y", "Z"]].copy()
-                    self.survey = survey[["ID", "AT", "AZ", "DIP"]].copy()
-                    self.table = table.copy()
+                    self.collar = self.collar[["ID", "X", "Y", "Z"]].copy()
+                    self.survey = self.survey[["ID", "AT", "AZ", "DIP"]].copy()
+                    self.table = self.table.copy()
                     
                     # Procesa toda la información
                     self.validate_columns()
@@ -307,23 +303,41 @@ class DrillData:
         """Validates that each drillhole has more than one survey row.
            The drillholes with one or zero survey rows are deleted."""        
         
-        collar = self.collar
-        survey = self.survey
-        table = self.table
         one_row_dhs = []
+        zero_row_dhs = []
         
-        for dh in survey["ID"].unique():
-            count = len(survey[survey["ID"] == dh])
-            if count <= 1:
-                one_row_dhs.append(dh)
+        for dh in self.survey["ID"].unique():
+            dh_survey = self.survey[self.survey["ID"] == dh]
+            count = len(dh_survey)
+            if count == 1:
+                if dh_survey["AT"].iloc[0] != 0:
+                    # Creando una nueva fila de survey que se ubicará en superficie
+                    row = pd.DataFrame({"ID": [dh],
+                                        "AT": [0],
+                                        "AZ": [dh_survey["AZ"].iloc[0]],
+                                        "DIP": [dh_survey["DIP"].iloc[0]]})
+                    insert_position = dh_survey.index[0]
+                    # Dividiendo el DataFrame para insertar la nueva fila
+                    df1 = self.survey.iloc[:insert_position]
+                    df2 = self.survey.iloc[insert_position:]
+                    # Insertando la nueva fila
+                    self.survey = pd.concat([df1, row, df2]).reset_index(drop=True)
+                else:
+                    one_row_dhs.append(dh)
+            elif count == 0:
+                zero_row_dhs.append(dh)
             else:
                 pass
         
         if len(one_row_dhs) > 0:
+            for dh in zero_row_dhs:
+                self.collar.drop(self.collar.loc[self.collar["ID"] == dh].index, inplace=True)
+                self.survey.drop(self.survey.loc[self.survey["ID"] == dh].index, inplace=True)
+                self.table.drop(self.table.loc[self.table["ID"] == dh].index, inplace=True)
             for dh in one_row_dhs:
-                collar.drop(collar.loc[collar["ID"] == dh].index, inplace=True)
-                survey.drop(survey.loc[survey["ID"] == dh].index, inplace=True)
-                table.drop(table.loc[table["ID"] == dh].index, inplace=True)
+                self.collar.drop(self.collar.loc[self.collar["ID"] == dh].index, inplace=True)
+                self.survey.drop(self.survey.loc[self.survey["ID"] == dh].index, inplace=True)
+                self.table.drop(self.table.loc[self.table["ID"] == dh].index, inplace=True)
         else:
             pass
             
