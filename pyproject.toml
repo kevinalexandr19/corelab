@@ -5,8 +5,9 @@ build-backend = "hatchling.build"
 [project]
 name = "corelab"
 version = "1.0.0"
+license = {text = "MIT License"}
 authors = [
-    {name="Kevin A. Gomez", email="kevinalexandr19@gmail.com"}
+    {name = "Kevin A. Gomez", email = "kevinalexandr19@gmail.com"}
 ]
 description = "Python library for 2D and 3D drillhole information visualization."
 readme = "README.md"
@@ -39,4 +40,5 @@ dependencies = [
     "scipy>=1.10.1",
 ]
 
-
+[project.urls]
+"Homepage" = "https://github.com/kevinalexandr19/corelab"
